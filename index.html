@@ -247,7 +247,7 @@ async function loadData() {
 
     try {
 
-        const response = await fetch("/live-data");
+        const response = await fetch("https://untruth-tannery-roundworm.ngrok-free.dev/live-data");
 
         if (!response.ok) {
             throw new Error("API returned " + response.status);
