@@ -1,10 +1,12 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Doctor | Live Dashboard</title>
+
+    <title>Smart Doctor | Patient Monitoring</title>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -39,7 +41,6 @@
         }
 
         .connection {
-            color: #4ade80;
             font-weight: bold;
         }
 
@@ -127,7 +128,6 @@
             border-radius: 5px;
             font-size: 11px;
             font-weight: bold;
-            margin-left: 8px;
         }
 
         button {
@@ -170,6 +170,7 @@
         <p id="connection" class="connection">
             Connecting to backend...
         </p>
+
         <button onclick="loadData()">Refresh Now</button>
     </div>
 </header>
@@ -203,6 +204,7 @@
 <!-- Emergency Alerts -->
 
 <div class="panel alert-panel" id="emergencyPanel">
+
     <h2 style="color:#fb7185;">
         🚨 Emergency Alerts
     </h2>
@@ -212,22 +214,29 @@
     </p>
 
     <div id="emergencyAlerts"></div>
+
 </div>
 
 <!-- Risk Chart -->
 
 <div class="panel">
+
     <h2>Patient Risk Overview</h2>
+
     <canvas id="riskChart"></canvas>
+
 </div>
 
 <!-- Patient Monitoring -->
 
 <div class="panel">
+
     <h2>Patient Monitoring</h2>
+
     <div class="patients" id="patients">
         Loading patient information...
     </div>
+
 </div>
 
 <p class="small" id="updated">
@@ -240,14 +249,36 @@
 
 <script>
 
+// ==========================================
+// 1. BACKEND CONNECTION
+// ==========================================
+
+// IMPORTANT: Replace this with your actual
+// ngrok URL copied from Google Colab.
+
+const API_BASE_URL = "https://untruth-tannery-roundworm.ngrok-free.dev";
+
 let chart = null;
+
 let previouslyCritical = new Set();
+
+
+// ==========================================
+// 2. LOAD LIVE PATIENT DATA
+// ==========================================
 
 async function loadData() {
 
     try {
 
-        const response = await fetch("https://untruth-tannery-roundworm.ngrok-free.dev/live-data");
+        const response = await fetch(
+            `${API_BASE_URL}/live-data`,
+            {
+                headers: {
+                    "ngrok-skip-browser-warning": "true"
+                }
+            }
+        );
 
         if (!response.ok) {
             throw new Error("API returned " + response.status);
@@ -260,14 +291,18 @@ async function loadData() {
 
         // Connection status
 
-        const connection = document.getElementById("connection");
+        const connection =
+            document.getElementById("connection");
 
         connection.textContent =
             "● Connected — Live patient data received";
 
         connection.style.color = "#4ade80";
 
-        // Hospital overview
+
+        // ==================================
+        // 3. HOSPITAL OVERVIEW
+        // ==================================
 
         document.getElementById("total").textContent =
             patients.length;
@@ -281,7 +316,10 @@ async function loadData() {
         document.getElementById("critical").textContent =
             alerts.critical;
 
-        // Find critical patients
+
+        // ==================================
+        // 4. EMERGENCY ALERTS
+        // ==================================
 
         const criticalPatients = patients.filter(
             p => p.Status === "CRITICAL"
@@ -331,32 +369,20 @@ async function loadData() {
 
                 }).join("");
 
-            // Log newly critical patients only once per transition
-
-            criticalPatients.forEach(p => {
-
-                if (!previouslyCritical.has(p.Patient_ID)) {
-                    console.warn(
-                        "New critical alert detected:",
-                        p.Patient_ID
-                    );
-                }
-
-            });
-
         } else {
 
             emergencyPanel.style.display = "none";
 
         }
 
-        // Save current critical patient IDs
-
         previouslyCritical = new Set(
             criticalPatients.map(p => p.Patient_ID)
         );
 
-        // Patient cards
+
+        // ==================================
+        // 5. PATIENT MONITORING CARDS
+        // ==================================
 
         document.getElementById("patients").innerHTML =
             patients.map(p => `
@@ -385,11 +411,18 @@ async function loadData() {
 
             `).join("");
 
-        // Risk chart
 
-        const labels = patients.map(p => p.Patient_ID);
+        // ==================================
+        // 6. PATIENT RISK CHART
+        // ==================================
 
-        const scores = patients.map(p => p.Risk_Score);
+        const labels = patients.map(
+            p => p.Patient_ID
+        );
+
+        const scores = patients.map(
+            p => p.Risk_Score
+        );
 
         if (chart) {
 
@@ -423,11 +456,7 @@ async function loadData() {
                         scales: {
                             y: {
                                 beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: "Risk Score",
-                                    color: "#e5e7eb"
-                                },
+
                                 ticks: {
                                     color: "#cbd5e1"
                                 }
@@ -453,7 +482,10 @@ async function loadData() {
 
         }
 
-        // Last updated time
+
+        // ==================================
+        // 7. LAST UPDATED TIME
+        // ==================================
 
         document.getElementById("updated").textContent =
             "Last updated: " +
@@ -477,11 +509,12 @@ async function loadData() {
 
 }
 
-// Initial data loading
+
+// ==========================================
+// 8. AUTOMATIC REFRESH
+// ==========================================
 
 loadData();
-
-// Automatically refresh every 5 seconds
 
 setInterval(loadData, 5000);
 
